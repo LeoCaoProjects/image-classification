@@ -1,57 +1,60 @@
-# ENGE707: cat and dog facial-feature classification
+# Cat and dog facial feature classification
 
-This project classifies eight cat/dog facial features using a reference CNN,
-frozen MobileNetV2 features and partial fine-tuning. The fixed grouped,
-class-stratified split contains 50,927 training and 12,733 validation images.
-Identical decoded images stay together. Related crops or animals without
-source metadata may still overlap.
+A project for data engineering and AI at AUT. I built a deep learning pipeline in PyTorch to classify cat and dog eyes, faces, mouths and noses, then compared a custom CNN with transfer learning and fine tuning for a Kaggle competition.
 
-| Experiment | Best epoch | Validation accuracy | Macro F1 | Kaggle score* |
-| --- | ---: | ---: | ---: | ---: |
-| E0 Reference CNN | 15 | 83.78% | 0.842719 | — |
-| E1 Frozen MobileNetV2 | 10 | 95.08% | 0.949144 | 0.9218 |
-| E2 Partial fine-tuning | 8 | 98.63% | 0.987329 | 0.9397 |
+<br>
 
-*The table contains the recorded Kaggle submission scores. Validation
-accuracy and Kaggle scores are separate. E2 validation has 12,558 correct predictions,
-175 errors, cross-entropy 0.040039216507934836 and weighted F1 0.9862631262638263.
+<p align="center">
+  <a href="outputs/figures/reference_cnn_architecture.png"><img src="outputs/figures/reference_cnn_architecture.png" height="190" alt="Reference CNN architecture with convolution, pooling and dropout layers"></a>
+  &nbsp;&nbsp;
+  <a href="outputs/figures/E2_mobilenetv2_loss_accuracy_curves.png"><img src="outputs/figures/E2_mobilenetv2_loss_accuracy_curves.png" height="190" alt="Training and validation loss and accuracy during MobileNetV2 fine tuning"></a>
+</p>
+<p align="center"><em>Custom CNN architecture (left) and MobileNetV2 fine tuning (right).</em></p>
 
-## Run locally or on Kaggle
+<br>
 
-Use Python 3.14 and the existing CPU dependency set for local development:
+1. **Explore the images.** Checked 63,660 labelled images for class imbalance, size differences, missing files and duplicates.
+
+2. **Prepare the data.** Resized and padded images without stretching them, normalised pixel values and added training augmentation. Used a stratified 80/20 split, keeping identical images together to reduce data leakage.
+
+3. **Build a baseline.** Trained a custom CNN using convolution, ReLU, max pooling and dropout. Tracked training and validation loss to assess learning and overfitting.
+
+4. **Apply transfer learning.** Replaced MobileNetV2's classifier and trained it with the pretrained features frozen. Then fine tuned selected feature layers using smaller learning rates.
+
+5. **Evaluate and investigate.** Compared all three models on the same validation set using accuracy, F1 scores and confusion matrices. Inspected incorrect predictions, including confident mistakes and ambiguous crops.
+
+6. **Check and submit.** Reloaded saved checkpoints to verify results, generated predictions for 29,443 test images and checked submission IDs, labels and coverage before submitting to Kaggle.
+
+Read the [full report](report.pdf) for the experiments, error analysis and limitations.
+
+<br>
+
+## Results
+
+<div align="center">
+<table>
+  <thead>
+    <tr><th>Model</th><th>Validation accuracy</th><th>Kaggle score</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Custom CNN</td><td align="center">83.78%</td><td align="center">Not submitted</td></tr>
+    <tr><td>MobileNetV2, frozen features</td><td align="center">95.08%</td><td align="center">92.18%</td></tr>
+    <tr><td>MobileNetV2, partial fine tuning</td><td align="center"><strong>98.63%</strong></td><td align="center"><strong>93.97%</strong></td></tr>
+  </tbody>
+</table>
+</div>
+
+<br>
+
+## Running locally
+
+Use Python 3.14. Create and activate a virtual environment, then run:
 
 ```sh
-python -m venv .venv
-# Windows PowerShell:
-.venv\Scripts\Activate.ps1
-# macOS/Linux: source .venv/bin/activate
 python -m pip install -r requirements.txt
-python -m ipykernel install --user --name enge707-assessment3 --display-name "ENGE707 Assessment 3"
 python -m jupyter lab
 ```
 
-`requirements-lock.txt` records the original local Windows environment.
-Kaggle uses its provided GPU packages: do not install the CPU requirements
-or lock file there. Attach the project files and competition data. Set
-`PROJECT_ROOT` to the extracted project folder and `DATA_ROOT` to the
-competition dataset mount in the notebook configuration cell. Use notebook
-**06** to restore the final checkpoint without retraining.
+Download the [competition data](https://www.kaggle.com/competitions/enge-707-2026-s-2-cat-and-dog-facial-feature-classification-ch) into `data/raw/`, keeping its original folder structure.
 
-Place the external dataset under ignored `data/raw/`, retaining
-`train_labels.csv`, `sample_submission.csv`, `train/train/` and `test/test/`.
-On Kaggle, the default dataset mount is
-`/kaggle/input/datasets/leocaoprojects/enge707-2026-s2/`.
-Nested image directories are discovered; an existing training cache is
-an optional explicit override. No dataset copying happens automatically.
-
-Run notebooks in order: **01** data exploration, **02** preprocessing,
-**03** reference CNN, **04** frozen MobileNetV2, **05** fine-tuning,
-**06** evaluation/submission and **07** E1 error analysis before fine-tuning.
-Each starts independently. Training and test prediction default to disabled.
-
-To use the final checkpoint without retraining, open notebook **06**, keep
-`EXPERIMENT="E2"`, and enable only evaluation or prediction as required.
-Complete checkpoints load strictly with no pretrained download. Only a new
-E1 training run requires official torchvision ImageNet V2 weights.
-
-Saved models, results and figures are in `outputs/`. The final Kaggle submission is `outputs/submissions/submission_E2.csv`. New runs save separately under `outputs/reproduction/`.
+Open the [notebooks](notebooks) in Jupyter. Use notebook **06** to evaluate the saved model without retraining, and enable `RUN_EVALUATION` in its configuration cell.
